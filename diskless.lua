@@ -497,3 +497,5 @@ function component.proxy(addr)
 		return compProx(addr)
 	end
 end
+
+return diskless
