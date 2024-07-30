@@ -621,4 +621,13 @@ function component.proxy(addr)
 	end
 end
 
+local cd = component.doc
+function component.doc(addr, func)
+	if list_contains(diskless.components,addr) then
+		return filesystemDoc[func]
+	else
+		return cd(addr,func)
+	end
+end
+
 return diskless
