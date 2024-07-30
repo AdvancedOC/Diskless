@@ -11,6 +11,27 @@ diskless.components = {}
 
 diskless.uuidchars = "0123456789abcdef"
 
+diskless.filesystemDoc = { -- directly yoinked from the actual one
+	size = [[function(path:string):number -- Returns the size of the object at the specified absolute path in the file system.]],
+	close = [[function(handle:userdata) -- Closes an open file descriptor with the specified handle.]],
+	rename = [[function(from:string, to:string):boolean -- Renames/moves an object from the first specified absolute path in the file system to the second.]],
+	lastModified = [[function(path:string):number -- Returns the (real world) timestamp of when the object at the specified absolute path in the file system was modified.]],
+	setLabel = [[function(value:string):string -- Sets the label of the drive. Returns the new value, which may be truncated.]],
+	read = [[function(handle:userdata, count:number):string or nil -- Reads up to the specified amount of data from an open file descriptor with the specified handle. Returns nil when EOF is reached.]],
+	isDirectory = [[function(path:string):boolean -- Returns whether the object at the specified absolute path in the file system is a directory.]],
+	spaceTotal = [[function():number -- The overall capacity of the file system, in bytes.]],
+	isReadOnly = [[function():boolean -- Returns whether the file system is read-only.]],
+	exists = [[function(path:string):boolean -- Returns whether an object exists at the specified absolute path in the file system.]],
+	open = [[function(path:string[, mode:string='r']):userdata -- Opens a new file descriptor and returns its handle.]],
+	list = [[function(path:string):table -- Returns a list of names of objects in the directory at the specified absolute path in the file system.]],
+	makeDirectory = [[function(path:string):boolean -- Creates a directory at the specified absolute path in the file system. Creates parent directories, if necessary.]],
+	seek = [[function(handle:userdata, whence:string, offset:number):number -- Seeks in an open file descriptor with the specified handle. Returns the new pointer position.]],
+	getLabel = [[function():string -- Get the current label of the drive.]],
+	remove = [[function(path:string):boolean -- Removes the object at the specified absolute path in the file system.]],
+	spaceUsed = [[function():number -- The currently used capacity of the file system, in bytes.]],
+	write = [[function(handle:userdata, value:string):boolean -- Writes the specified data to an open file descriptor with the specified handle.]]
+}
+
 local function string_escape_pattern(text)
 	return text:gsub("([^%w])", "%%%1")
 end
@@ -473,7 +494,7 @@ function diskless.makeRamFS(readonly, sizeLimit, isComponent)
 	return uuid
 end
 
-function diskless.makeProxy(uuid)
+function diskless.makeSimpleProxy(uuid) -- takes WAY less ram, but is  way more detectable
 	if diskless.pools[uuid] then
 		local prox = {}
 
@@ -482,6 +503,32 @@ function diskless.makeProxy(uuid)
 				return v(uuid, ...)
 			end
 		end
+
+		return prox
+	end
+end
+
+function diskless.makeProxy(uuid)
+	if diskless.pools[uuid] then
+		local prox = {}
+
+		for k,v in pairs(diskless.funcs) do
+			prox[k] = setmetatable({},
+				{
+					__tostring = function (t)
+						return diskless.filesystemDoc[k]
+					end,
+					__call = function (t, ...)
+						diskless.funcs[k](uuid, ...)
+					end
+				}
+			)
+		end
+
+		prox.address = uuid
+		prox.type = "filesystem"
+		prox.slot = -1 -- -1 is the value used for floppies that are outside the computer, in a disk drive, and also for raids
+		               -- this means that, even though -1 looks weird as a slot, it's fairly undetectable.
 
 		return prox
 	end
