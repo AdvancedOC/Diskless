@@ -211,6 +211,10 @@ diskless.funcs.rename = function (uuid, path1, path2)
 
 		if not pool[path1] then return false end
 
+		if not diskless.pathHasParent(path2) then
+			return false
+		end
+
 		local tomove = {}
 
 		if pool[path1].type == "folder" then
