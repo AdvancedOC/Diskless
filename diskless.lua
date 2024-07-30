@@ -2,6 +2,7 @@ local diskless = {}
 
 -- TODO LIST:
 -- add out of space error
+-- enforce limitations for labels
 
 diskless.pools = {}
 
@@ -74,10 +75,9 @@ diskless.funcs.isReadOnly = function(uuid)
 	end
 end
 
+-- apparently you can setlabel even when readonly, so it's on purpose that i don't check
 diskless.funcs.setLabel = function (uuid, newval)
 	if diskless.pools[uuid] then
-		-- TODO: enforce length limit & other limitations
-
 		if type(newval) == "string" then
 			diskless.pools[uuid].label = newval
 
@@ -361,10 +361,10 @@ diskless.funcs.close = function (uuid, handleID)
 
 		if string_contains(handle.mode, "w") then
 			local pool = diskless.pools[uuid].pool
-			if not pool[handle.path] then pool[handle.path] = {type = "file", lastModified = os.time()} end
+			if not pool[handle.path] then pool[handle.path] = {type = "file"} end
 			local file = pool[handle.path]
 
-
+			file.lastModified = os.time()
 			file.data = table.concat(handle.buf or {})
 		end
 
@@ -416,6 +416,7 @@ function diskless.makeRamFS(readonly, sizeLimit)
 	return uuid
 end
 
+-- this function does not check for readonly filesystems. this is on purpose.
 function diskless.forceWrite(uuid, path, data)
 	if diskless.pools[uuid] then
 		path = diskless.fixPath(path)
