@@ -451,7 +451,7 @@ function component.list(filter, exact)
 		for k,v in pairs(diskless.pools) do
 			vals[k] = "filesystem"
 		end
-	elseif (not exact) and string.contains("filesystem", filter) then
+	elseif (not exact) and string_contains("filesystem", filter) then
 		for k,v in pairs(diskless.pools) do
 			vals[k] = "filesystem"
 		end
