@@ -598,11 +598,13 @@ function component.list(filter, exact)
 
 	local add = false
 
-	if exact and filter == "filesystem" then
+	if not filter then
+		add = true
+	elseif exact and filter == "filesystem" then
 		add = true
 	elseif (not exact) and string_contains("filesystem", filter) then
 		add = true
-	elseif (not exact) and #filter == 0 then
+	elseif (not exact) and (#filter == 0) then
 		add = true
 	end
 
