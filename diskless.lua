@@ -334,6 +334,8 @@ diskless.funcs.write = function (uuid, handleID, data)
 		local handles = diskless.pools[uuid].handles
 		local handle = handles[handleID]
 
+		if not handle then return end
+
 		if not string_contains(handle.mode, "w") then return false end
 
 		handle.buf = handle.buf or {}
@@ -346,6 +348,8 @@ diskless.funcs.read = function (uuid, handleID, amount)
 	if diskless.pools[uuid] then
 		local handles = diskless.pools[uuid].handles
 		local handle = handles[handleID]
+
+		if not handle then return end
 
 		if not string_contains(handle.mode, "r") then return nil end
 
@@ -374,6 +378,8 @@ diskless.funcs.seek = function (uuid, handleID, whence, offset)
 		local handles = diskless.pools[uuid].handles
 		local handle = handles[handleID]
 
+		if not handle then return end
+
 		if not string_contains(handle.mode, "r") then return nil end
 
 		local pool = diskless.pools[uuid].pool
@@ -397,6 +403,8 @@ diskless.funcs.close = function (uuid, handleID)
 	if diskless.pools[uuid] then
 		local handles = diskless.pools[uuid].handles
 		local handle = handles[handleID]
+
+		if not handle then return end
 
 		if string_contains(handle.mode, "w") then
 			local pool = diskless.pools[uuid].pool
@@ -604,7 +612,7 @@ function component.list(filter, exact)
 		add = true
 	elseif (not exact) and string_contains("filesystem", filter) then
 		add = true
-	elseif (not exact) and (#filter == 0) then
+	elseif (not exact) and (#filter == 0) then -- i'm pretty sure the #filter == 0 will be handled by the one above, but just in case
 		add = true
 	end
 
