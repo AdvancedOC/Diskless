@@ -361,7 +361,9 @@ diskless.funcs.close = function (uuid, handleID)
 
 		if string_contains(handle.mode, "w") then
 			local pool = diskless.pools[uuid].pool
+			if not pool[handle.path] then pool[handle.path] = {type = "file", lastModified = os.time()} end
 			local file = pool[handle.path]
+
 
 			file.data = table.concat(handle.buf or {})
 		end
@@ -420,7 +422,13 @@ function diskless.forceWrite(uuid, path, data)
 
 		local pool = diskless.pools[uuid].pool
 
-		pool[path] = data
+		if pool[path] then
+			if pool[path].type ~= "file" then
+				return "There's already a non-file in the path!"
+			end
+		end
+
+		pool[path] = {type = "file", data = data, lastModified = os.time()}
 	end
 end
 
@@ -430,7 +438,11 @@ function diskless.forceRead(uuid, path)
 
 		local pool = diskless.pools[uuid].pool
 
-		return pool[path]
+		if pool[path] then
+			if pool[path].type == "file" then
+				return pool[path].data
+			end
+		end
 	end
 end
 
