@@ -1,8 +1,9 @@
 local diskless = {}
 
 -- TODO LIST:
--- add out of space error
+-- add out of space error -- kinda done
 -- enforce limitations for labels
+-- properly check if file path is valid (there is a parent folder) -- kinda done
 
 diskless.pools = {}
 
@@ -277,6 +278,10 @@ diskless.funcs.open = function (uuid, path, mode)
 			if pool[path].type ~= "file" then return nil end
 		end
 
+		if not pool[path] then
+			if not diskless.pathHasParent(uuid, path) then return nil end -- has to have a parent dir
+		end
+
 		local handleID = diskless.pools[uuid].handleID
 
 		handles[handleID] = {
@@ -361,14 +366,53 @@ diskless.funcs.close = function (uuid, handleID)
 
 		if string_contains(handle.mode, "w") then
 			local pool = diskless.pools[uuid].pool
-			if not pool[handle.path] then pool[handle.path] = {type = "file"} end
-			local file = pool[handle.path]
 
-			file.lastModified = os.time()
-			file.data = table.concat(handle.buf or {})
+			if pool[handle.path] then
+				if pool[handle.path].type == "file" then
+					pool[handle.path] = nil -- erase old file
+				end
+			end
+
+			if (not pool[handle.path]) then
+				local size = diskless.funcs.spaceUsed(uuid)
+
+				local fulldata = table.concat(handle.buf or {})
+
+				if diskless.pools[uuid].sizeLimit and size + #fulldata > diskless.pools[uuid].sizeLimit then
+					return "out of space" -- TODO: potentially properly do shit while writing instead of erroring on close lol
+				end
+
+				pool[handle.path] = {type = "file"}
+				local file = pool[handle.path]
+
+				file.lastModified = os.time()
+				file.data = fulldata
+			end
+
 		end
 
 		handles[handleID] = nil
+	end
+end
+
+function diskless.pathHasParent(uuid, path)
+	if diskless.pools[uuid] then
+		path = diskless.fixPath(path)
+		local pool = diskless.pools[uuid].pool
+
+		local parts = string_split(path,"/")
+
+		for k,v in pairs(pool) do
+			if string_startswith(path, k) then
+				local parts2 = string_split(k, "/")
+
+				if #parts2 == #parts-1 then
+					return true
+				end
+			end
+		end
+
+		return false
 	end
 end
 
@@ -427,6 +471,16 @@ function diskless.forceWrite(uuid, path, data)
 			if pool[path].type ~= "file" then
 				return "There's already a non-file in the path!"
 			end
+		end
+
+		pool[path] = nil -- if there was alr a file
+
+		if not diskless.pathHasParent(uuid,path) then return "The path doesn't have a parent directory!" end
+
+		local spaceused = diskless.funcs.spaceUsed(uuid)
+
+		if (diskless.pools[uuid].sizeLimit) and (spaceused + #data > diskless.pools[uuid].sizeLimit) then
+			return "out of space"
 		end
 
 		pool[path] = {type = "file", data = data, lastModified = os.time()}
