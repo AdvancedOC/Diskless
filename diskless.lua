@@ -453,7 +453,7 @@ local ci = component.invoke
 function component.invoke(addr, func, ...)
 	if diskless.pools[addr] then
 		if diskless.funcs[func] then
-			diskless.funcs[func](addr, ...)
+			return diskless.funcs[func](addr, ...)
 		end
 	else
 		return ci(addr,func,...)
@@ -488,7 +488,7 @@ function component.proxy(addr)
 
 		for k,v in pairs(diskless.funcs) do
 			prox[k] = function (...)
-				v(addr, ...)
+				return v(addr, ...)
 			end
 		end
 
@@ -497,5 +497,3 @@ function component.proxy(addr)
 		return compProx(addr)
 	end
 end
-
-return diskless
