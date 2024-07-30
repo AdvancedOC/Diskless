@@ -264,6 +264,7 @@ end
 
 diskless.funcs.open = function (uuid, path, mode)
 	if diskless.pools[uuid] then
+		mode = mode or "r"
 		if string_contains(mode, "w") and diskless.pools[uuid].readonly then return nil end
 
 		local pool = diskless.pools[uuid].pool
