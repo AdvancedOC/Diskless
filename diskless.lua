@@ -636,4 +636,37 @@ function component.doc(addr, func)
 	end
 end
 
+local cm = component.methods
+function component.methods(addr)
+	if list_contains(diskless.components, addr) then
+		local methods = {}
+
+		for k,v in pairs(diskless.funcs) do
+			methods[k] = true
+		end
+
+		return methods
+	else
+		cm(addr)
+	end
+end
+
+local cs = component.slot
+function component.slot(addr)
+	if list_contains(diskless.components, addr) then
+		return -1
+	else
+		return cs(addr)
+	end
+end
+
+local ct = component.type
+function component.type(addr)
+	if list_contains(diskless.components, addr) then
+		return "filesystem"
+	else
+		return ct(addr)
+	end
+end
+
 return diskless
