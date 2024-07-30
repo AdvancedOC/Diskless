@@ -272,7 +272,10 @@ diskless.funcs.open = function (uuid, path, mode)
 
 		local handles = diskless.pools[uuid].handles
 
-		if string_contains(mode, "r") and ((not pool[path]) or pool[path].type ~= "file") then return nil end
+		if string_contains(mode, "r") then
+			if not pool[path] then return nil end
+			if pool[path].type ~= "file" then return nil end
+		end
 
 		local handleID = diskless.pools[uuid].handleID
 
