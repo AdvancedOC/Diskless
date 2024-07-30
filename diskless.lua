@@ -473,6 +473,20 @@ function diskless.makeRamFS(readonly, sizeLimit, isComponent)
 	return uuid
 end
 
+function diskless.makeProxy(uuid)
+	if diskless.pools[uuid] then
+		local prox = {}
+
+		for k,v in pairs(diskless.funcs) do
+			prox[k] = function (...)
+				return v(uuid, ...)
+			end
+		end
+
+		return prox
+	end
+end
+
 -- this function does not check for readonly filesystems. this is on purpose.
 function diskless.forceWrite(uuid, path, data)
 	if diskless.pools[uuid] then
@@ -554,15 +568,7 @@ end
 local compProx = component.proxy
 function component.proxy(addr)
 	if list_contains(diskless.components,addr) then
-		local prox = {}
-
-		for k,v in pairs(diskless.funcs) do
-			prox[k] = function (...)
-				return v(addr, ...)
-			end
-		end
-
-		return prox
+		return diskless.makeProxy(addr)
 	else
 		return compProx(addr)
 	end
