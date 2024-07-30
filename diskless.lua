@@ -158,7 +158,7 @@ diskless.funcs.list = function (uuid, path)
 
 		local parts = string_split(path,"/")
 
-		if (not pool[path]) or (pool[path].type ~= "folder") then return nil end
+		if (not pool[path]) or (pool[path].type ~= "folder") then return nil,"no such file or directory" end
 
 		local startcheck = path .. "/"
 
@@ -250,7 +250,7 @@ diskless.funcs.size = function (uuid, path)
 
 		path = diskless.fixPath(path)
 
-		if not pool[path] then return nil end
+		if not pool[path] then return nil, "no such file or directory" end
 
 		if pool[path].type == "folder" then
 			local size = 0
@@ -300,7 +300,7 @@ end
 diskless.funcs.open = function (uuid, path, mode)
 	if diskless.pools[uuid] then
 		mode = mode or "r"
-		if string_contains(mode, "w") and diskless.pools[uuid].readonly then return nil end
+		if string_contains(mode, "w") and diskless.pools[uuid].readonly then return nil, "Cannot write to read-only disk" end
 
 		local pool = diskless.pools[uuid].pool
 		path = diskless.fixPath(path)
@@ -308,12 +308,12 @@ diskless.funcs.open = function (uuid, path, mode)
 		local handles = diskless.pools[uuid].handles
 
 		if string_contains(mode, "r") then
-			if not pool[path] then return nil end
-			if pool[path].type ~= "file" then return nil end
+			if not pool[path] then return nil, "no such file or directory" end
+			if pool[path].type ~= "file" then return "not a file" end
 		end
 
 		if not pool[path] then
-			if not diskless.pathHasParent(uuid, path) then return nil end -- has to have a parent dir
+			if not diskless.pathHasParent(uuid, path) then return nil, "no such file or directory" end -- has to have a parent dir
 		end
 
 		local handleID = diskless.pools[uuid].handleID
@@ -351,7 +351,7 @@ diskless.funcs.read = function (uuid, handleID, amount)
 
 		if not handle then return end
 
-		if not string_contains(handle.mode, "r") then return nil end
+		if not string_contains(handle.mode, "r") then return nil, "not a read handle" end
 
 		local pool = diskless.pools[uuid].pool
 		local file = pool[handle.path]
