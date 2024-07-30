@@ -7,7 +7,7 @@ local diskless = {}
 
 diskless.pools = {}
 
-diskless.uuidchars = "abcdefghijklmnopqrstuvwxyz0123456789"
+diskless.uuidchars = "0123456789abcdef"
 
 local function string_escape_pattern(text)
 	return text:gsub("([^%w])", "%%%1")
