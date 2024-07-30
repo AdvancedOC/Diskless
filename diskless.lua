@@ -7,6 +7,8 @@ local diskless = {}
 
 diskless.pools = {}
 
+diskless.components = {}
+
 diskless.uuidchars = "0123456789abcdef"
 
 local function string_escape_pattern(text)
@@ -35,6 +37,13 @@ local function string_split(inputstr, sep)
 		end
 	end
 	return t
+end
+
+local function list_contains(list, val)
+	for i = 1,#list do
+		if val == list[i] then return true end
+	end
+	return false
 end
 
 diskless.funcs = {}
@@ -443,7 +452,7 @@ function diskless.generateUUID()
 	.. diskless.generateUUIDSegment(12)
 end
 
-function diskless.makeRamFS(readonly, sizeLimit)
+function diskless.makeRamFS(readonly, sizeLimit, isComponent)
 	local uuid = diskless.generateUUID()
 
 	diskless.pools[uuid] = {
@@ -456,6 +465,10 @@ function diskless.makeRamFS(readonly, sizeLimit)
 	}
 
 	diskless.funcs.makeDirectory(uuid, "/") -- make sure there's a root, probably a good idea
+
+	if isComponent then
+		diskless.components[#diskless.components+1] = uuid
+	end
 
 	return uuid
 end
@@ -506,7 +519,7 @@ end
 local ci = component.invoke
 function component.invoke(addr, func, ...)
 	if diskless.pools[addr] then
-		if diskless.funcs[func] then
+		if list_contains(diskless.components,addr) then
 			return diskless.funcs[func](addr, ...)
 		end
 	else
@@ -518,17 +531,20 @@ local cl = component.list
 function component.list(filter, exact)
 	local vals = cl(filter,exact)
 
+	local add = false
+
 	if exact and filter == "filesystem" then
-		for k,v in pairs(diskless.pools) do
-			vals[k] = "filesystem"
-		end
+		add = true
 	elseif (not exact) and string_contains("filesystem", filter) then
-		for k,v in pairs(diskless.pools) do
-			vals[k] = "filesystem"
-		end
+		add = true
 	elseif (not exact) and #filter == 0 then
-		for k,v in pairs(diskless.pools) do
-			vals[k] = "filesystem"
+		add = true
+	end
+
+	if add then
+		for i = 1,#diskless.components do
+			local comp = diskless.components[i]
+			vals[comp] = "filesystem"
 		end
 	end
 
@@ -537,7 +553,7 @@ end
 
 local compProx = component.proxy
 function component.proxy(addr)
-	if diskless.pools[addr] then
+	if list_contains(diskless.components,addr) then
 		local prox = {}
 
 		for k,v in pairs(diskless.funcs) do
