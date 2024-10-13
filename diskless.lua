@@ -531,7 +531,7 @@ function diskless.makeProxy(uuid)
 						return diskless.filesystemDoc[k]
 					end,
 					__call = function (t, ...)
-						diskless.funcs[k](uuid, ...)
+						return diskless.funcs[k](uuid, ...)
 					end
 				}
 			)
