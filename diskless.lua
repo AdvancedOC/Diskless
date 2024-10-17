@@ -537,6 +537,8 @@ function diskless.makeProxy(uuid)
 			)
 		end
 
+		setmetatable(prox, {__metatable = {}}) -- make it return a fake metatable, incase some program tries to mess with it
+
 		prox.address = uuid
 		prox.type = "filesystem"
 		prox.slot = -1 -- -1 is the value used for floppies that are outside the computer, in a disk drive, and also for raids
