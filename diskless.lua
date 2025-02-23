@@ -309,7 +309,7 @@ diskless.funcs.open = function (uuid, path, mode)
 
 		if string_contains(mode, "r") then
 			if not pool[path] then return nil, "no such file or directory" end
-			if pool[path].type ~= "file" then return "not a file" end
+			if pool[path].type ~= "file" then return nil, "not a file" end
 		end
 
 		if not pool[path] then
